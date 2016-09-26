@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-# Set proxy
+# Set proxy (remove if not needed)
 ENV http_proxy http://10.9.1.80:8080
 ENV https_proxy http://10.9.1.80:8080
 
