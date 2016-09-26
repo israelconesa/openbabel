@@ -1,28 +1,29 @@
-FROM phusion/baseimage:latest
+FROM alpine:latest
 
-# When proxy required
-# ENV http_proxy http://10.9.1.80:8080
-# ENV https_proxy http://10.9.1.80:8080
+# Set proxy
+ENV http_proxy http://10.9.1.80:8080
+ENV https_proxy http://10.9.1.80:8080
 
-# Use baseimage-docker's init system.
-CMD ["/sbin/my_init"]
+# Install dependencies
+RUN apk update && apk add cmake make gcc g++
 
-RUN apt-get update
+# Download source
+ADD https://sourceforge.net/projects/openbabel/files/latest/download/openbabel-openbabel-2-4-0.tar.gz /
 
-# Install applications to compile openbabel
-RUN apt-get install -y g++ cmake git
+# Extract source files
+RUN tar -xvzf /openbabel-openbabel-2-4-0.tar.gz && rm /openbabel-openbabel-2-4-0.tar.gz
 
-# Clone project from github
-RUN cd /usr/local/
-RUN git clone https://github.com/openbabel/openbabel.git
-
-# Create build folder
-RUN mkdir /usr/local/openbabel-build
+# create build folder
+RUN mkdir /obabel-build
 
 # Compile openbabel
-RUN cd /usr/local/openbabel-build
-RUN cmake ./openbabel
-RUN make -j4 && make install
+RUN cd /obabel-build && cmake /openbabel-openbabel-2-4-0
+RUN cd /obabel-build && make -j4 && make install -j4
 
-# Clean up APT when done.
-RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# Removing unnecesary packages
+RUN apk del gcc g++
+
+# Remove source files
+RUN rm -r /openbabel-openbabel-2-4-0
+
+ENTRYPOINT ["sh"]
