@@ -9,7 +9,8 @@ RUN apk update && apk add  \
         cmake \
          make \
          gcc \
-        g++
+        g++ \
+        cairo
 
 # Download source
 ADD https://sourceforge.net/projects/openbabel/files/latest/download/openbabel-openbabel-2-4-0.tar.gz /
