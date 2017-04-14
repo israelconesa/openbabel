@@ -1,46 +1,59 @@
 FROM alpine:latest
 
-# Set proxy (remove if not needed)
-ENV http_proxy http://10.9.1.80:8080
-ENV https_proxy http://10.9.1.80:8080
+ENV user_dir /home/obuilder
+ENV build_path ${user_dir}/obuild
+ENV install_path ${user_dir}/obinstall
+
+# Create obuilder user and add it to sudoers without password
+RUN adduser -D obuilder \
+        && echo "obuilder ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Install dependencies
 RUN apk update && apk add  \
         cmake \
-         make \
-         gcc \
-        g++ \
-        cairo
+        cairo-dev \
+        zlib-dev \
+        libxml2-dev \
+        python-dev \
+        gcc \
+        make \
+        g++
 
-# Download source
-ADD https://sourceforge.net/projects/openbabel/files/latest/download/openbabel-openbabel-2-4-0.tar.gz /
+# Create build and installation folders
+RUN mkdir ${build_path} && mkdir ${install_path}
 
-# create build folder
-RUN mkdir /obabel-build
+# Download openbabel source
+ADD https://netcologne.dl.sourceforge.net/project/openbabel/openbabel/2.4.1/openbabel-2.4.1.tar.gz ${user_dir}
 
-# Add user and granting permissions to installation folder
-RUN adduser -D obuser \
-        && echo "obuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
-        && mkdir /home/obuser/openbabel-2-4-0 \
-        && chown obuser:obuser /home/obuser/openbabel-2-4-0
+# Download eigen source
+ADD http://bitbucket.org/eigen/eigen/get/3.3.3.tar.gz ${user_dir}
 
-# Extract source files
-RUN tar -xvzf /openbabel-openbabel-2-4-0.tar.gz && rm /openbabel-openbabel-2-4-0.tar.gz
+# Extract openbabel and eigen source files
+RUN mkdir -p ${user_dir}/openbabel-2.4.1 && tar xvzf ${user_dir}/openbabel-2.4.1.tar.gz -C ${user_dir}/openbabel-2.4.1 --strip-components=1 \
+              && mkdir -p ${user_dir}/eigen3 && tar xvzf ${user_dir}/3.3.3.tar.gz -C ${user_dir}/eigen3 --strip-components=1
+
+# Give user_dir ownership of the folder
+RUN chown obuilder:obuilder ${user_dir}/*
 
 # Compile openbabel
-RUN cd /obabel-build && cmake /openbabel-openbabel-2-4-0 -DCMAKE_INSTALL_PREFIX=/home/obuser/openbabel-2-4-0
-RUN cd /obabel-build && make -j4 && make install -j4
+RUN su obuilder -c "cd ${build_path} && cmake ${user_dir}/openbabel-2.4.1 \
+                  -DCMAKE_INSTALL_PREFIX=${install_path} \
+                  -DEIGEN3_INCLUDE_DIR=${user_dir}/eigen3 \
+                  -DPYTHON_BINDINGS=ON \
+                  -DBUILD_GUI=OFF"
 
-# Removing unnecesary packages
-RUN apk del gcc g++
+RUN su obuilder -c "cd ${build_path} && make -j4 && make install -j4"
 
-# Remove source and build files
-RUN rm -r /openbabel-openbabel-2-4-0 && rm -r /obabel-build
+# Removing unnecesary packages (must be checked)
+# RUN apk del gcc g++
+
+# Remove source and build files (must be checked)
+# RUN rm -r openbabel-2.4.1 && rm -r /obuild
 
 # Set path to openbabel final bin location
-ENV PATH $PATH:/home/obuser/openbabel-2-4-0/bin
+ENV PATH $PATH:${install_path}/bin
 
 # Switch user and set entrypoint to its home folder
-USER obuser
+USER obuilder
 ENTRYPOINT ["sh"]
-WORKDIR /home/obuser/openbabel-2-4-0
+WORKDIR ${install_path}
