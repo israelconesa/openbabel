@@ -23,13 +23,13 @@ RUN apk update && apk add  \
 RUN mkdir ${build_path} && mkdir ${install_path}
 
 # Download openbabel source
-ADD https://netcologne.dl.sourceforge.net/project/openbabel/openbabel/2.4.1/openbabel-2.4.1.tar.gz ${user_dir}
+ADD https://github.com/openbabel/openbabel/archive/openbabel-2-4-1.tar.gz ${user_dir}
 
 # Download eigen source
 ADD http://bitbucket.org/eigen/eigen/get/3.3.3.tar.gz ${user_dir}
 
 # Extract openbabel and eigen source files
-RUN mkdir -p ${user_dir}/openbabel-2.4.1 && tar xvzf ${user_dir}/openbabel-2.4.1.tar.gz -C ${user_dir}/openbabel-2.4.1 --strip-components=1 \
+RUN mkdir -p ${user_dir}/openbabel-2.4.1 && tar xvzf ${user_dir}/openbabel-2-4-1.tar.gz -C ${user_dir}/openbabel-2.4.1 --strip-components=1 \
               && mkdir -p ${user_dir}/eigen3 && tar xvzf ${user_dir}/3.3.3.tar.gz -C ${user_dir}/eigen3 --strip-components=1
 
 # Give user_dir ownership of the folder
